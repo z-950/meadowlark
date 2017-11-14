@@ -1,18 +1,12 @@
 const express = require('express');
 const app = express();
+var fortune = require('./lib/fortune.js');
 // 设置 handlebars 视图引擎
 const handlebars = require('express-handlebars')
     .create({ defaultLayout:'main' });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
-const fortunes = [
-    "Conquer your fears or they will conquer you.",
-    "Rivers need springs.",
-    "Do not fear what you don't know.",
-    "You will have a pleasant surprise.",
-    "Whenever possible, keep it simple.",
-];
 // 设置静态地址
 app.use(express.static(__dirname + '/public'));
 // 设置端口
@@ -22,8 +16,7 @@ app.get('/', function(req, res) {
     res.render('home');
 });
 app.get('/about', function(req, res){
-    const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
-    res.render('about', { fortune: randomFortune });
+    res.render('about', { fortune: fortune.getFortune() } );
 });
 // 404 catch-all 处理器（中间件）
 app.use(function(req, res, next){
