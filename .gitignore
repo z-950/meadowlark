@@ -3,3 +3,4 @@ node_modules
 .vscode
 # put any other files you don't want to check in here,
 # such as .DS_Store (OSX), *.bak, etc.
+.vscode/launch.json
