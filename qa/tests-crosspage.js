@@ -31,7 +31,8 @@ suite('Cross-Page Tests', function(){
         browser.visit('http://localhost:3000/tours/request-group-rate',
             function(){
                 // browser.resources['0'].request.headers._headers[0][0]无referer时是accept
-                assert(browser.resources['0'].request.headers._headers[0][0] !== 'referer');
+                assert(browser.resources['0'].request.headers._headers[0][0] !== 'referer'||
+                    browser.resources['0'].request.headers._headers[0][1] === '');
                 done();
         });
     });

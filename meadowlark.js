@@ -6,7 +6,8 @@ const handlebars = require('express-handlebars')
     .create({ defaultLayout:'main' });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
-
+// 禁止返回头中的powered-by
+app.disable('x-powered-by');
 // 设置静态地址
 app.use(express.static(__dirname + '/public'));
 // 设置端口
