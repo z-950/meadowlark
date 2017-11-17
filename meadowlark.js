@@ -10,6 +10,8 @@ app.set('view engine', 'handlebars');
 app.disable('x-powered-by');
 // 设置静态地址
 app.use(express.static(__dirname + '/public'));
+// 添加中间件
+app.use(require('body-parser')());
 // 设置端口
 app.set('port', process.env.PORT || 3000);
 // 测试
