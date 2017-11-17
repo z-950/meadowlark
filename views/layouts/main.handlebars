@@ -3,7 +3,7 @@
 <head>
 <title>Meadowlark Travel</title>
     {{#if showTests}}
-    <link rel="stylesheet" href="/vendor/mocha.css">
+        <link rel="stylesheet" href="/vendor/mocha.css">
     {{/if}}
     <script src="//code.jquery.com/jquery-2.0.2.min.js"></script>
 </head>
@@ -20,9 +20,11 @@
         </script>
         <script src="/qa/tests-global.js"></script>
         {{#if pageTestScript}}
-        <script src="{{pageTestScript}}"></script>
+            <script src="{{pageTestScript}}"></script>
         {{/if}}
         <script>mocha.run();</script>
     {{/if}}
+    <script src="http://code.jquery.com/jquery-2.0.2.min.js"></script>
+    {{{_sections.jquery}}}
 </body>
 </html>

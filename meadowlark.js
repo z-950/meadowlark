@@ -2,8 +2,16 @@ const express = require('express');
 const app = express();
 const fortune = require('./lib/fortune.js');
 // 设置 handlebars 视图引擎
-const handlebars = require('express-handlebars')
-    .create({ defaultLayout:'main' });
+const handlebars = require('express-handlebars').create({
+    defaultLayout:'main',
+    helpers: {
+        section: function(name, options){
+            if(!this._sections) this._sections = {};
+            this._sections[name] = options.fn(this);
+            return null;
+        }
+    }
+});
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 // 禁止返回头中的powered-by
@@ -30,17 +38,19 @@ app.get('/about', function(req, res){
         pageTestScript: '/qa/tests-about.js'
     });
 });
-
+// 处理post
 app.get('/newsletter', function(req, res){
     // 我们会在后面学到 CSRF……目前， 只提供一个虚拟值
     res.render('newsletter', { csrf: 'CSRF token goes here' });
 });
 app.post('/process', function(req, res){
-    console.log('Form (from querystring): ' + req.query.form);
-    console.log('CSRF token (from hidden form field): ' + req.body._csrf);
-    console.log('Name (from visible form field): ' + req.body.name);
-    console.log('Email (from visible form field): ' + req.body.email);
-    res.redirect(303, '/thank-you');
+    if(req.xhr || req.accepts('json,html')==='json'){
+        // 如果发生错误， 应该发送 { error: 'error description' }
+        res.send({ success: true });
+    } else {
+        // 如果发生错误， 应该重定向到错误页面
+        res.redirect(303, '/thank-you');
+    }
 });
 app.get('/thank-you', function(req,res){
     res.render('thank-you');
