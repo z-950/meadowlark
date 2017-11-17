@@ -30,6 +30,22 @@ app.get('/about', function(req, res){
         pageTestScript: '/qa/tests-about.js'
     });
 });
+
+app.get('/newsletter', function(req, res){
+    // 我们会在后面学到 CSRF……目前， 只提供一个虚拟值
+    res.render('newsletter', { csrf: 'CSRF token goes here' });
+});
+app.post('/process', function(req, res){
+    console.log('Form (from querystring): ' + req.query.form);
+    console.log('CSRF token (from hidden form field): ' + req.body._csrf);
+    console.log('Name (from visible form field): ' + req.body.name);
+    console.log('Email (from visible form field): ' + req.body.email);
+    res.redirect(303, '/thank-you');
+});
+app.get('/thank-you', function(req,res){
+    res.render('thank-you');
+});
+
 app.get('/tours/hood-river', function(req, res){
     res.render('tours/hood-river');
 });
