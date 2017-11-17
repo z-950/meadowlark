@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const fortune = require('./lib/fortune.js');
+const formidable = require('formidable');
 // 设置 handlebars 视图引擎
 const handlebars = require('express-handlebars').create({
     defaultLayout:'main',
@@ -38,7 +39,7 @@ app.get('/about', function(req, res){
         pageTestScript: '/qa/tests-about.js'
     });
 });
-// 处理post
+    // 处理post
 app.get('/newsletter', function(req, res){
     // 我们会在后面学到 CSRF……目前， 只提供一个虚拟值
     res.render('newsletter', { csrf: 'CSRF token goes here' });
@@ -55,7 +56,26 @@ app.post('/process', function(req, res){
 app.get('/thank-you', function(req,res){
     res.render('thank-you');
 });
-
+    // 文件上传
+app.get('/contest/vacation-photo',function(req,res){
+    var now = new Date();
+    res.render('contest/vacation-photo',{
+        year: now.getFullYear(),month: now.getMonth()+1
+    });
+});
+app.post('/contest/vacation-photo/:year/:month', function(req, res){
+    var form = new formidable.IncomingForm();
+    form.parse(req, function(err, fields, files){
+        if(err) return res.redirect(303, '/error');
+        // 数据操作
+        console.log('received fields:');
+        console.log(fields);
+        console.log('received files:');
+        console.log(files);
+        res.redirect(303, '/thank-you');
+    });
+});
+    // 其他
 app.get('/tours/hood-river', function(req, res){
     res.render('tours/hood-river');
 });
