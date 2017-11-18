@@ -10,10 +10,14 @@
     {{{_sections.head}}}
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="/vendor/js/modernizr-2.6.2-respond-1.1.0.min.js"></script>
 </head>
 <body>
     <header><img src="/img/logo.jpg" alt="Meadowlark Travel Logo"></header>
-    <div>
+    <div class="container">
         {{#if flash}}
             <div class="alert alert-dismissible alert-{{flash.type}}">
                 <button type="button" class="close" 
@@ -24,10 +28,11 @@
         {{{body}}}
         <hr>
         <footer>
-            <p>&copy; Meadowlark Travel 2014</p>
+            <p>&copy; Meadowlark Travel</p>
         </footer>
     </div>
     <script src="//code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script>window.jQuery || document.write('<script src="/vendor/js/jquery-2.1.1.min.js"><\/script>')</script>
     {{{_sections.jquery}}}
     {{#if showTests}}
         <div id="mocha"></div>
@@ -43,6 +48,7 @@
         {{/if}}
         <script>mocha.run();</script>
     {{/if}}
-    <script src="http://code.jquery.com/jquery-2.0.2.min.js"></script>
+    <script src="/vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/js/main.js"></script>
 </body>
 </html>
