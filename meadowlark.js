@@ -70,7 +70,6 @@ app.get('/tours/oregon-coast', function(req, res){
 app.get('/tours/request-group-rate', function(req, res){
     res.render('tours/request-group-rate');
 });
-
 app.get('/newsletter', function(req, res){
     res.render('newsletter');
 });
