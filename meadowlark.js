@@ -1,3 +1,4 @@
+const http = require('http')
 const express = require('express');
 const app = express();
 // 复合表单处理（文件上传）
@@ -6,6 +7,8 @@ const formidable = require('formidable');
 const credentials = require('./credentials.js');
 // 文件数据
 const fortune = require('./lib/fortune.js');
+// 发送邮件  ./credentials.js数据不足，关闭以防止报错
+// const emailService = require('./lib/email.js')(credentials);
 // 设置 handlebars 视图引擎
 const handlebars = require('express-handlebars').create({
     defaultLayout:'main',
@@ -19,6 +22,8 @@ const handlebars = require('express-handlebars').create({
 });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
+// 发送邮件
+// emailService.send('joecustomer@gmail.com', 'Hood River tours on sale today!','Get \'em while they\'re hot!');
 // 设置端口
 app.set('port', process.env.PORT || 3000);
 // 禁止返回头中的powered-by
@@ -48,6 +53,26 @@ app.use(function(req, res, next){
     delete req.session.flash;
     next();
 });
+    // 显示线程工作情况，需要调用next()才有后续响应
+// app.use(function(req,res,next){
+//     var cluster = require('cluster');
+//     if(cluster.isWorker) {
+//         console.log('Worker %d received request',cluster.worker.id);
+//     }
+// });
+    // 日志模块
+switch(app.get('env')){
+    case 'development':
+    // 紧凑的、 彩色的开发日志，输出到控制台
+        app.use(require('morgan')('dev'));
+        break;
+    case 'production':
+    // 模块 'express-logger' 支持按日志循环
+        app.use(require('express-logger')({
+            path: __dirname + '/log/requests.log'
+        }));
+        break;
+}
 // 路由
 app.get('/', function(req, res) {
     res.render('home');
@@ -146,6 +171,18 @@ app.use(function(err, req, res, next){
     res.render('500');
 });
 
-app.listen(app.get('port'), function(){
-    console.log( 'Express started on http://localhost:' + app.get('port') + '; press Ctrl-C to terminate.' );
-});
+function startServer() {
+    http.createServer(app).listen(app.get('port'), function(){
+        console.log( 'Express started in ' + app.get('env') +
+        ' mode on http://localhost:' + app.get('port') +
+        '; press Ctrl-C to terminate.' );
+    });
+}
+if(require.main === module){
+    // 应用程序直接运行； 启动应用服务器
+    startServer();
+} else {
+    // 应用程序作为一个模块通过 "require" 引入 : 导出函数
+    // 创建服务器
+    module.exports = startServer;
+}

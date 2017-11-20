@@ -4,3 +4,4 @@ node_modules
 # such as .DS_Store (OSX), *.bak, etc.
 .vscode
 credentials.js
+public/log/
