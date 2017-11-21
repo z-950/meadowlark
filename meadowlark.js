@@ -110,6 +110,23 @@ switch(app.get('env')){
         }));
         break;
 }
+// 数据库连接，未完成
+// var mongoose = require('mongoose');
+// var opts = {
+//     server: {
+//         socketOptions: { keepAlive: 1 }
+//     }
+// };
+// switch(app.get('env')){
+//     case 'development':
+//         mongoose.connect(credentials.mongo.development.connectionString, opts);
+//         break;
+//     case 'production':
+//         mongoose.connect(credentials.mongo.production.connectionString, opts);
+//         break;
+//     default:
+//         throw new Error('Unknown execution environment: ' + app.get('env'));
+// }
 // 路由
 app.get('/', function(req, res) {
     res.render('home');
@@ -138,6 +155,7 @@ app.get('/fail', function(req, res){
 });
     // 未捕获异常
 app.get('/epic-fail', function(req, res){
+    // 等同于setTimeout，但更高效
     process.nextTick(function(){
         throw new Error('Kaboom!');
     });
@@ -194,16 +212,40 @@ app.get('/contest/vacation-photo',function(req,res){
         year: now.getFullYear(),month: now.getMonth()+1
     });
 });
+    // 确保存在目录 data
+const dataDir = __dirname + '/data';
+const vacationPhotoDir = dataDir + '/vacation-photo';
+fs.existsSync(dataDir) || fs.mkdirSync(dataDir);
+fs.existsSync(vacationPhotoDir) || fs.mkdirSync(vacationPhotoDir);
+function saveContestEntry(contestName, email, year, month, photoPath){
+    // TODO……这个稍后再做
+}
 app.post('/contest/vacation-photo/:year/:month', function(req, res){
     var form = new formidable.IncomingForm();
     form.parse(req, function(err, fields, files){
         if(err) return res.redirect(303, '/error');
-        // 数据操作
-        console.log('received fields:');
-        console.log(fields);
-        console.log('received files:');
-        console.log(files);
-        res.redirect(303, '/thank-you');
+        if(err) {
+            res.session.flash = {
+                type: 'danger',
+                intro: 'Oops!',
+                message: 'There was an error processing your submission. ' +
+                'Pelase try again.',
+            };
+            return res.redirect(303, '/contest/vacation-photo');
+        }
+        const photo = files.photo;
+        const dir = vacationPhotoDir + '/' + Date.now();
+        const path = dir + '/' + photo.name;
+        fs.mkdirSync(dir);
+        fs.renameSync(photo.path, dir + '/' + photo.name);
+        saveContestEntry('vacation-photo', fields.email,
+            req.params.year, req.params.month, path);
+        req.session.flash = {
+            type: 'success',
+            intro: 'Good luck!',
+            message: 'You have been entered into the contest.',
+        };
+        return res.redirect(303, '/contest/vacation-photo/entries');
     });
 });
 // 404 catch-all 处理器（中间件）
