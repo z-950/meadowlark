@@ -1,5 +1,6 @@
 const http = require('http')
 const express = require('express');
+const fs = require('fs')
 const app = express();
 // 复合表单处理（文件上传）
 const formidable = require('formidable');
@@ -7,6 +8,60 @@ const formidable = require('formidable');
 const credentials = require('./credentials.js');
 // 文件数据
 const fortune = require('./lib/fortune.js');
+// 接入mongodb
+const mongoose = require('mongoose');
+const opts = {
+    server: {
+        socketOptions: { keepAlive: 1 }
+    }
+};
+mongoose.connect('mongodb://localhost/test', opts);
+const Vacation = require('./models/vacation.js');
+Vacation.find(function(err, vacations){
+    if(vacations.length) return;
+    new Vacation({
+        name: 'Hood River Day Trip',
+        slug: 'hood-river-day-trip',
+        category: 'Day Trip',
+        sku: 'HR199',
+        description: 'Spend a day sailing on the Columbia and ' +
+        'enjoying craft beers in Hood River!',
+        priceInCents: 9995,
+        tags: ['day trip', 'hood river', 'sailing', 'windsurfing', 'breweries'],
+        inSeason: true,
+        maximumGuests: 16,
+        available: true,
+        packagesSold: 0,
+    }).save();
+    new Vacation({
+        name: 'Oregon Coast Getaway',
+        slug: 'oregon-coast-getaway',
+        category: 'Weekend Getaway',
+        sku: 'OC39',
+        description: 'Enjoy the ocean air and quaint coastal towns!',
+        priceInCents: 269995,
+        tags: ['weekend getaway', 'oregon coast', 'beachcombing'],
+        inSeason: false,
+        maximumGuests: 8,
+        available: true,
+        packagesSold: 0,
+    }).save();
+    new Vacation({
+        name: 'Rock Climbing in Bend',
+        slug: 'rock-climbing-in-bend',
+        category: 'Adventure',
+        sku: 'B99',
+        description: 'Experience the thrill of climbing in the high desert.',
+        priceInCents: 289995,
+        tags: ['weekend getaway', 'bend', 'high desert', 'rock climbing'],
+        inSeason: true,
+        requiresWaiver: true,
+        maximumGuests: 4,
+        available: false,
+        packagesSold: 0,
+        notes: 'The tour guide is currently recovering from a skiing accident.',
+    }).save();
+});
 // 发送邮件  ./credentials.js数据不足，关闭以防止报错
 // const emailService = require('./lib/email.js')(credentials);
 // 设置 handlebars 视图引擎
@@ -149,6 +204,22 @@ app.get('/tours/oregon-coast', function(req, res){
 app.get('/tours/request-group-rate', function(req, res){
     res.render('tours/request-group-rate');
 });
+app.get('/vacations', function(req, res){
+    Vacation.find({ available: true }, function(err, vacations){
+        var context = {
+            vacations: vacations.map(function(vacation){
+                return {
+                    sku: vacation.sku,
+                    name: vacation.name,
+                    description: vacation.description,
+                    price: vacation.getDisplayPrice(),
+                    inSeason: vacation.inSeason,
+                }
+            })
+        };
+        res.render('vacations', context);
+    });
+})
     // 非未捕获异常
 app.get('/fail', function(req, res){
     throw new Error('Nope!');
