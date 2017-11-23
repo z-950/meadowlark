@@ -8,6 +8,8 @@ const formidable = require('formidable');
 const credentials = require('./credentials.js');
 // 文件数据
 const fortune = require('./lib/fortune.js');
+const Vacation = require('./models/vacation.js');
+const VacationInSeasonListener = require('./models/vacationInSeasonListener.js');
 // 接入mongodb
 const mongoose = require('mongoose');
 const opts = {
@@ -16,7 +18,6 @@ const opts = {
     }
 };
 mongoose.connect('mongodb://localhost/test', opts);
-const Vacation = require('./models/vacation.js');
 Vacation.find(function(err, vacations){
     if(vacations.length) return;
     new Vacation({
@@ -64,6 +65,7 @@ Vacation.find(function(err, vacations){
 });
 // 发送邮件  ./credentials.js数据不足，关闭以防止报错
 // const emailService = require('./lib/email.js')(credentials);
+// emailService.send('joecustomer@gmail.com', 'Hood River tours on sale today!','Get \'em while they\'re hot!');
 // 设置 handlebars 视图引擎
 const handlebars = require('express-handlebars').create({
     defaultLayout:'main',
@@ -77,8 +79,6 @@ const handlebars = require('express-handlebars').create({
 });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
-// 发送邮件
-// emailService.send('joecustomer@gmail.com', 'Hood River tours on sale today!','Get \'em while they\'re hot!');
 // 设置端口
 app.set('port', process.env.PORT || 3000);
 // 禁止返回头中的powered-by
@@ -165,23 +165,6 @@ switch(app.get('env')){
         }));
         break;
 }
-// 数据库连接，未完成
-// var mongoose = require('mongoose');
-// var opts = {
-//     server: {
-//         socketOptions: { keepAlive: 1 }
-//     }
-// };
-// switch(app.get('env')){
-//     case 'development':
-//         mongoose.connect(credentials.mongo.development.connectionString, opts);
-//         break;
-//     case 'production':
-//         mongoose.connect(credentials.mongo.production.connectionString, opts);
-//         break;
-//     default:
-//         throw new Error('Unknown execution environment: ' + app.get('env'));
-// }
 // 路由
 app.get('/', function(req, res) {
     res.render('home');
@@ -220,6 +203,33 @@ app.get('/vacations', function(req, res){
         res.render('vacations', context);
     });
 })
+app.get('/notify-me-when-in-season', function(req, res){
+    res.render('notify-me-when-in-season', { sku: req.query.sku });
+});
+app.post('/notify-me-when-in-season', function(req, res){
+    VacationInSeasonListener.update(
+        { email: req.body.email },
+        { $push: { skus: req.body.sku } },
+        { upsert: true },
+        function(err){
+            if(err) {
+                console.error(err.stack);
+                req.session.flash = {
+                    type: 'danger',
+                    intro: 'Ooops!',
+                    message: 'There was an error processing your request.',
+                };
+                return res.redirect(303, '/vacations');
+            } 
+            req.session.flash = {
+                type: 'success',
+                intro: 'Thank you!',
+                message: 'You will be notified when this vacation is in season.',
+            };
+            return res.redirect(303, '/vacations');
+        }
+    );
+});
     // 非未捕获异常
 app.get('/fail', function(req, res){
     throw new Error('Nope!');
@@ -231,6 +241,7 @@ app.get('/epic-fail', function(req, res){
         throw new Error('Kaboom!');
     });
 });
+    // 邮件
 app.get('/newsletter', function(req, res){
     res.render('newsletter');
 });
