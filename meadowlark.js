@@ -2,6 +2,10 @@ const http = require('http')
 const express = require('express');
 const fs = require('fs')
 const app = express();
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const mongoStore = require('connect-mongo')(session);
+const mongoose = require('mongoose');
 // 复合表单处理（文件上传）
 const formidable = require('formidable');
 // 密钥
@@ -10,14 +14,24 @@ const credentials = require('./credentials.js');
 const fortune = require('./lib/fortune.js');
 const Vacation = require('./models/vacation.js');
 const VacationInSeasonListener = require('./models/vacationInSeasonListener.js');
-// 接入mongodb
-const mongoose = require('mongoose');
+// mongodb（关闭浏览器后浏览器cookie被删除，即客户端session消失，但服务器session依旧储存，超过有效时间才会被删除）
 const opts = {
-    server: {
-        socketOptions: { keepAlive: 1 }
-    }
+    useMongoClient: true,
+    socketTimeoutMS: 0,
+    keepAlive: true,
+    reconnectTries: 30
 };
-mongoose.connect('mongodb://localhost/test', opts);
+mongoose.connect(credentials.mongo.development.connectionString, opts);
+app.use(session({
+    resave: true,
+    saveUninitialized: false,
+    secret: credentials.cookieSecret,
+    store: new mongoStore({
+        url:credentials.mongo.development.connectionString,
+        ttl: 24 * 60 * 60 // = 1 days. Default，有效时间
+    })
+}));
+// 添加or更新数据
 Vacation.find(function(err, vacations){
     if(vacations.length) return;
     new Vacation({
@@ -83,6 +97,7 @@ app.set('view engine', 'handlebars');
 app.set('port', process.env.PORT || 3000);
 // 禁止返回头中的powered-by
 app.disable('x-powered-by');
+// 集群
 app.use(function(req, res, next){
     // 为这个请求创建一个域
     var domain = require('domain').create();
@@ -123,15 +138,10 @@ app.use(function(req, res, next){
 // 设置静态地址
 app.use(express.static(__dirname + '/public'));
 // 添加中间件
-app.use(require('body-parser')());
+app.use(bodyParser.json());// for parsing application/json
+app.use(bodyParser.urlencoded({ extended: true }));// for parsing application/x-www-form-urlencoded
     // 添加cookie相关(内存存储)
 app.use(require('cookie-parser')(credentials.cookieSecret));
-    // cookie相关？配置内容？
-app.use(require('express-session')({
-    resave: false,
-    saveUninitialized: false,
-    secret: credentials.cookieSecret,
-}));
     // 测试
 app.use(function(req, res, next){
     res.locals.showTests = app.get('env') !== 'production' &&
@@ -187,19 +197,39 @@ app.get('/tours/oregon-coast', function(req, res){
 app.get('/tours/request-group-rate', function(req, res){
     res.render('tours/request-group-rate');
 });
+app.get('/set-currency/:currency', function(req,res){
+    req.session.currency = req.params.currency;
+    return res.redirect(303, '/vacations');
+});
+function convertFromUSD(value, currency){
+    switch(currency){
+        case 'USD': return value * 1;
+        case 'GBP': return value * 0.6;
+        case 'BTC': return value * 0.0023707918444761;
+        default: return NaN;
+    }
+}
 app.get('/vacations', function(req, res){
     Vacation.find({ available: true }, function(err, vacations){
+        var currency = req.session.currency || 'USD';
         var context = {
+            currency: currency,
             vacations: vacations.map(function(vacation){
                 return {
                     sku: vacation.sku,
                     name: vacation.name,
                     description: vacation.description,
-                    price: vacation.getDisplayPrice(),
+                    qty: vacation.qty,
+                    price: convertFromUSD(vacation.priceInCents/100, currency),
                     inSeason: vacation.inSeason,
                 }
             })
         };
+        switch(currency){
+            case 'USD': context.currencyUSD = 'selected'; break;
+            case 'GBP': context.currencyGBP = 'selected'; break;
+            case 'BTC': context.currencyBTC = 'selected'; break;
+        }
         res.render('vacations', context);
     });
 })
@@ -230,11 +260,11 @@ app.post('/notify-me-when-in-season', function(req, res){
         }
     );
 });
-    // 非未捕获异常
+    // 可捕获异常，测试
 app.get('/fail', function(req, res){
     throw new Error('Nope!');
 });
-    // 未捕获异常
+    // 未捕获异常，测试
 app.get('/epic-fail', function(req, res){
     // 等同于setTimeout，但更高效
     process.nextTick(function(){
