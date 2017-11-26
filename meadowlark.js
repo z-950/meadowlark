@@ -14,6 +14,7 @@ const credentials = require('./credentials.js');
 const fortune = require('./lib/fortune.js');
 const Vacation = require('./models/vacation.js');
 const VacationInSeasonListener = require('./models/vacationInSeasonListener.js');
+const Attraction = require('./models/attraction.js');
 // mongodb（关闭浏览器后浏览器cookie被删除，即客户端session消失，但服务器session依旧储存，超过有效时间才会被删除）
 const opts = {
     useMongoClient: true,
@@ -175,6 +176,8 @@ switch(app.get('env')){
         }));
         break;
 }
+// 跨域资源共享
+app.use('/api', require('cors')());
 // 路由
 app.get('/', function(req, res) {
     res.render('home');
@@ -358,6 +361,48 @@ app.post('/contest/vacation-photo/:year/:month', function(req, res){
             message: 'You have been entered into the contest.',
         };
         return res.redirect(303, '/contest/vacation-photo/entries');
+    });
+});
+    // REST api
+app.get('/api/attractions', function(req, res){
+    Attraction.find({ approved: true }, function(err, attractions){
+        if(err) return res.send(500, 'Error occurred: database error.');
+        res.json(attractions.map(function(a){
+            return {
+                name: a.name,
+                id: a._id,
+                description: a.description,
+                location: a.location,
+            }
+        }));
+    });
+});
+app.post('/api/attraction', function(req, res){
+    const a = new Attraction({
+        name: req.body.name,
+        description: req.body.description,
+        location: { lat: req.body.lat, lng: req.body.lng },
+        history: {
+            event: 'created',
+            email: req.body.email,
+            date: new Date(),
+        },
+        approved: false,
+    });
+    a.save(function(err, a){
+        if(err) return res.send(500, 'Error occurred: database error.');
+        res.json({ id: a._id });
+    });
+});
+app.get('/api/attraction/:id', function(req,res){
+    Attraction.findById(req.params.id, function(err, a){
+        if(err) return res.send(500, 'Error occurred: database error.');
+        res.json({
+            name: a.name,
+            id: a._id,
+            description: a.description,
+            location: a.location,
+        });
     });
 });
     // 自动化渲染视图
