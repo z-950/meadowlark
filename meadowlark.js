@@ -360,6 +360,20 @@ app.post('/contest/vacation-photo/:year/:month', function(req, res){
         return res.redirect(303, '/contest/vacation-photo/entries');
     });
 });
+    // 自动化渲染视图
+let autoViews = {};
+app.use(function(req,res,next){
+    var path = req.path.toLowerCase();
+    // 检查缓存； 如果它在那里， 渲染这个视图
+    if(autoViews[path]) return res.render(autoViews[path]);
+    // 如果它不在缓存里， 那就看看有没有 .handlebars 文件能匹配
+    if(fs.existsSync(__dirname + '/views' + path + '.handlebars')){
+        autoViews[path] = path.replace(/^\//, '');
+        return res.render(autoViews[path]);
+    } 
+    // 没发现视图； 转到 404 处理器
+    next();
+});
 // 404 catch-all 处理器（中间件）
 app.use(function(req, res, next){
     res.status(404);
