@@ -12,6 +12,7 @@ const formidable = require('formidable');
 const credentials = require('./credentials.js');
 // 文件数据
 const fortune = require('./lib/fortune.js');
+const static = require('./lib/static.js').map
 const Vacation = require('./models/vacation.js');
 const VacationInSeasonListener = require('./models/vacationInSeasonListener.js');
 const Attraction = require('./models/attraction.js');
@@ -91,7 +92,7 @@ const handlebars = require('express-handlebars').create({
             return null;
         },
         static: function(name) {
-            return require('./lib/static.js').map(name);
+            return static(name);
         }
     }
 });
@@ -181,6 +182,13 @@ switch(app.get('env')){
 }
 // 跨域资源共享
 app.use('/api', require('cors')());
+// 设置图片
+app.use(function(req, res, next){
+    var now = new Date();
+    res.locals.logoImage = now.getMonth()==11 && now.getDate()==19 ?
+        static('/img/logo_bud_clark.png') : static('/img/logo.png');
+    next();
+});
 // 路由
 app.get('/', function(req, res) {
     res.render('home');
