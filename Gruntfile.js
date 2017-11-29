@@ -4,6 +4,7 @@ module.exports = function(grunt) {
         'grunt-cafe-mocha',
         'grunt-contrib-jshint',
         'grunt-exec',
+        'grunt-contrib-stylus',
     ].forEach(function(task){
         grunt.loadNpmTasks(task);
     });
@@ -22,7 +23,15 @@ module.exports = function(grunt) {
             linkchecker:
             { cmd: 'linkchecker http://localhost:3000' }
         },
+        stylus: {
+            compile: {
+                files: {
+                    'public/css/main.css': 'stylus/main.styl',
+                }
+            }
+        },
     });
     // 注册任务
-    grunt.registerTask('default', ['cafemocha','jshint','exec']);
+    grunt.registerTask('default', ['cafemocha','jshint','exec','stylus']);
+    
 };
